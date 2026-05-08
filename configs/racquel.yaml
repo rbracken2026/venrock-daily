@@ -75,7 +75,8 @@ sources:
     podcasts:
       - name: More or Less podcast
         site_url: https://moreorlesspod.com/
-        active: false
+        playlist_id: PLI0_clHshGZctchZkfCXmz7SPyuBSOoq1
+        active: true
   macro_and_markets:
     rss:
       - name: FT Markets

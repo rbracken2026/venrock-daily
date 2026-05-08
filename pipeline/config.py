@@ -69,7 +69,8 @@ class ScrapedSource(BaseModel):
 
 class PodcastSource(BaseModel):
     name: str
-    site_url: str
+    site_url: str = ""
+    playlist_id: Optional[str] = None
     active: bool = False
 
 

@@ -6,6 +6,7 @@ from .base import FetchedItem
 from .rss import fetch_all_rss
 from .scraper import fetch_all_scraped
 from .outlook import fetch_all_outlook
+from .youtube import fetch_youtube_podcast
 from ..config import BriefingConfig, SourceGroup
 
 logger = logging.getLogger(__name__)
@@ -30,13 +31,25 @@ def _dedup(items: list[FetchedItem]) -> list[FetchedItem]:
 
 
 async def _fetch_section(group: SourceGroup, section: str, api_key: str, rss_lookback_hours: int = 24) -> list[FetchedItem]:
+    loop = asyncio.get_event_loop()
+    youtube_items: list[FetchedItem] = []
+    for source in group.podcasts:
+        if source.active and source.playlist_id:
+            try:
+                result = await loop.run_in_executor(
+                    None, lambda s=source: fetch_youtube_podcast(s, section)
+                )
+                youtube_items.extend(result)
+            except Exception as exc:
+                logger.warning("YouTube fetch error for %s: %s", source.name, exc)
+
     tasks = [
         fetch_all_rss(group.rss, section, rss_lookback_hours),
         fetch_all_scraped(group.scraped_urls, section),
         fetch_all_outlook(group.outlook, section, api_key),
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
-    items: list[FetchedItem] = []
+    items: list[FetchedItem] = list(youtube_items)
     for r in results:
         if isinstance(r, list):
             items.extend(r)
