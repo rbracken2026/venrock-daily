@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Venrock Daily — Team Briefings</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --accent: #4f8ef7;
+      --accent-dim: #2a4a8a;
+      --text: #e2e4ed;
+      --muted: #8b90a7;
+      --green: #3ecf8e;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    header {
+      max-width: 900px;
+      margin: 0 auto 2.5rem;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .logo { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+    .subtitle { color: var(--muted); font-size: 0.9rem; }
+    .add-btn {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .add-btn:hover { background: var(--accent); color: #fff; }
+
+    #grid {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      transition: border-color 0.15s;
+    }
+    .card:hover { border-color: var(--accent-dim); }
+    .card-header { display: flex; align-items: center; gap: 0.75rem; }
+    .avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .card-name { font-weight: 600; font-size: 1rem; }
+    .card-meta { color: var(--muted); font-size: 0.8rem; margin-top: 1px; }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(62,207,142,0.12);
+      color: var(--green);
+    }
+    audio {
+      width: 100%;
+      height: 36px;
+      border-radius: 6px;
+      accent-color: var(--accent);
+    }
+    .card-actions { display: flex; gap: 0.6rem; }
+    .btn-copy, .btn-rss {
+      flex: 1;
+      padding: 0.4rem 0.75rem;
+      border-radius: 7px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-rss { text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .btn-rss:hover { border-color: var(--green); color: var(--green); }
+    .copied { color: var(--green) !important; border-color: var(--green) !important; }
+
+    #loading { text-align: center; color: var(--muted); padding: 3rem; }
+    #empty {
+      display: none;
+      text-align: center;
+      color: var(--muted);
+      padding: 3rem;
+      grid-column: 1 / -1;
+    }
+    #empty a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="logo">Venrock <span>Daily</span></div>
+      <div class="subtitle">Team morning briefings</div>
+    </div>
+    <a href="build.html" class="add-btn">+ Add your briefing</a>
+  </header>
+
+  <div id="grid">
+    <div id="loading">Loading briefings…</div>
+    <div id="empty">
+      No briefings yet. <a href="build.html">Create the first one.</a>
+    </div>
+  </div>
+
+  <script>
+    const FEEDS_URL = "./feeds.json";
+    const BASE = location.origin + location.pathname.replace(/\/[^/]*$/, "");
+
+    function initials(name) {
+      return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "No episodes yet";
+      const d = new Date(iso);
+      return "Last: " + d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function copyRSS(url, btn) {
+      navigator.clipboard.writeText(url).then(() => {
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = "Copy RSS"; btn.classList.remove("copied"); }, 2000);
+      });
+    }
+
+    function buildCard(person) {
+      const episodeUrl = person.last_episode
+        ? `${BASE}/shows/${person.id}/episodes/${person.last_episode}.mp3`
+        : null;
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="avatar">${initials(person.name)}</div>
+          <div>
+            <div class="card-name">${person.name}</div>
+            <div class="card-meta">${formatDate(person.last_episode)}</div>
+          </div>
+          ${person.last_episode ? '<span class="badge">NEW</span>' : ''}
+        </div>
+        ${episodeUrl ? `<audio controls preload="none" src="${episodeUrl}"></audio>` : '<div style="color:var(--muted);font-size:0.85rem">No episodes yet</div>'}
+        <div class="card-actions">
+          <button class="btn-copy" onclick="copyRSS('${person.feed_url}', this)">Copy RSS</button>
+          <a class="btn-rss btn-copy" href="${person.feed_url}" target="_blank">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="5" cy="19" r="3"/><path d="M4 4a16 16 0 0 1 16 16h-3A13 13 0 0 0 4 7V4z"/>
+              <path d="M4 11a9 9 0 0 1 9 9H10a6 6 0 0 0-6-6v-3z"/>
+            </svg>
+            View Feed
+          </a>
+        </div>
+      `;
+      return card;
+    }
+
+    async function load() {
+      const grid = document.getElementById("grid");
+      try {
+        const resp = await fetch(FEEDS_URL + "?t=" + Date.now());
+        const feeds = await resp.json();
+        grid.innerHTML = "";
+        if (!feeds.length) {
+          document.getElementById("empty").style.display = "block";
+          return;
+        }
+        feeds.sort((a, b) => (b.last_episode || "").localeCompare(a.last_episode || ""));
+        feeds.forEach(f => grid.appendChild(buildCard(f)));
+      } catch (e) {
+        grid.innerHTML = '<div id="empty" style="display:block;color:var(--muted);padding:3rem">Could not load feeds. Run a pipeline first to generate feeds.json.</div>';
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

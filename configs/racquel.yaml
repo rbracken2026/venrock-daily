@@ -1,0 +1,91 @@
+person:
+  id: racquel
+  name: Racquel
+  voice: en-US-JennyNeural
+  timezone: America/Los_Angeles
+
+schedule:
+  days: [mon, tue, wed, thu, fri]
+  time: "07:00"
+
+output:
+  target_words: 1600
+  quiet_day_threshold: 5
+  quiet_day_words: 650
+  format: mp3
+
+focus_areas:
+  relevance_threshold: 6
+  topics:
+    - Biotech and pharma pipeline news — FDA decisions, clinical trial readouts, drug approvals
+    - Obesity therapeutics — GLP-1, GIP, GCGR agonists, competitive landscape
+    - AI in drug discovery and clinical development
+    - Biotech VC — fundraising, M&A, IPOs, notable public biotech stock moves
+    - Tech and VC macro trends from smart investors
+    - Macro economics affecting markets, rates, or venture/biotech funding
+  thought_leaders:
+    - name: Adam Feuerstein
+      handles: ["@adamfeuerstein"]
+    - name: Sam Lessin
+      handles: ["@lessin"]
+    - name: Warren Buffett
+      aliases: ["Warren Buffett", "Berkshire Hathaway"]
+  exclude_topics:
+    - Consumer wellness unrelated to therapeutics
+    - Sports medicine
+    - Hospital operations and health insurance minutiae
+
+sources:
+  biotech_news:
+    rss:
+      - name: Endpoints News
+        url: https://endpoints.news/feed
+      - name: FierceBiotech
+        url: https://www.fiercebiotech.com/rss/xml
+      - name: Fierce Pharma
+        url: https://www.fiercepharma.com/rss/xml
+      - name: STAT News (free)
+        url: https://www.statnews.com/feed/
+      - name: BioPharma Dive
+        url: https://www.biopharmadive.com/feeds/news/
+    outlook:
+      - name: All STAT+ newsletters
+        search_query: "from:statnews.com"
+        lookback_hours: 24
+        active: false
+      - name: SWL Week in Review
+        search_query: "from:s@wlessin.com"
+        lookback_days: 7
+        active: false
+    scraped_urls:
+      - name: Berkshire Hathaway press releases
+        url: https://www.berkshirehathaway.com/news/newsb.html
+        lookback_days: 1
+  tech_insights:
+    scraped_urls:
+      - name: Sam Lessin posts
+        url: https://wlessin.com/posts
+        lookback_days: 7
+    podcasts:
+      - name: More or Less podcast
+        site_url: https://moreorlesspod.com/
+        active: false
+  macro_and_markets:
+    rss:
+      - name: FT Markets
+        url: https://www.ft.com/markets?format=rss
+      - name: Bloomberg Markets
+        url: https://feeds.bloomberg.com/markets/news.rss
+      - name: Axios main feed
+        url: https://www.axios.com/feeds/feed.rss
+        filter_topics: ["economy", "markets", "Federal Reserve", "interest rates", "inflation"]
+      - name: Axios Pro Rata
+        url: https://www.axios.com/pro-rata/rss
+
+style:
+  greeting: Open with "Good morning, Racquel" and the date. Preview three stories in two sentences.
+  tone: Intelligent, direct, investor-focused. Lead with implications, then facts. No filler.
+  story_treatment: 30-60 seconds per story. For clinical data, note comparator and competitive
+    implications. For deals, note valuation signal.
+  signoff: Close with "One thing to watch today:" — one forward-looking observation, two sentences.
+  section_order: [biotech_news, tech_insights, macro_and_markets]

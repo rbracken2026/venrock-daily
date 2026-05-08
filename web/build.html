@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Build Your Venrock Daily</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+      --accent: #4f8ef7; --accent-dim: #1e3260;
+      --text: #e2e4ed; --muted: #8b90a7; --green: #3ecf8e;
+      --red: #f75f4f; --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 2rem 1rem;
+    }
+    .wrap { max-width: 680px; margin: 0 auto; }
+    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .tagline { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+    .tagline a { color: var(--accent); text-decoration: none; }
+
+    /* Step indicator */
+    .steps { display: flex; gap: 0; margin-bottom: 2.5rem; }
+    .step {
+      flex: 1; text-align: center; padding: 0.6rem;
+      font-size: 0.78rem; color: var(--muted);
+      border-bottom: 2px solid var(--border);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .step.active { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+    .step.done { color: var(--green); border-color: var(--green); }
+
+    /* Panels */
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem; }
+
+    /* Form elements */
+    .field { margin-bottom: 1.25rem; }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.4rem; }
+    label span { color: var(--red); margin-left: 2px; }
+    input[type=text], input[type=time], select, textarea {
+      width: 100%; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); padding: 0.6rem 0.8rem;
+      font-size: 0.9rem; outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+    .hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.35rem; }
+
+    /* RSS row */
+    .rss-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+    .rss-row { display: flex; gap: 0.5rem; align-items: center; }
+    .rss-row input { flex: 1; }
+    .rss-row .name-field { flex: 0 0 160px; }
+    .rss-remove {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 1.1rem; padding: 0 4px;
+    }
+    .rss-remove:hover { color: var(--red); }
+    .add-row {
+      background: none; border: 1px dashed var(--border);
+      color: var(--muted); border-radius: 7px;
+      padding: 0.45rem 1rem; font-size: 0.82rem;
+      cursor: pointer; margin-top: 0.25rem;
+      transition: all 0.15s; width: 100%;
+    }
+    .add-row:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Topic tags */
+    .topics-area { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+    .topic-tag {
+      background: var(--accent-dim); color: var(--accent);
+      padding: 0.25rem 0.6rem; border-radius: 20px;
+      font-size: 0.8rem; display: flex; align-items: center; gap: 4px;
+    }
+    .topic-tag button {
+      background: none; border: none; color: inherit;
+      cursor: pointer; font-size: 1rem; line-height: 1;
+    }
+    .topic-input-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .topic-input-row input { flex: 1; }
+    .topic-input-row button {
+      background: var(--accent-dim); color: var(--accent);
+      border: 1px solid var(--accent); border-radius: 7px;
+      padding: 0.5rem 0.9rem; cursor: pointer; font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    /* Days checkboxes */
+    .days { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+    .day-btn {
+      padding: 0.35rem 0.7rem; border-radius: 6px;
+      border: 1px solid var(--border); background: none;
+      color: var(--muted); cursor: pointer; font-size: 0.82rem;
+      transition: all 0.15s;
+    }
+    .day-btn.on { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+
+    /* Nav buttons */
+    .nav { display: flex; justify-content: space-between; margin-top: 2rem; gap: 1rem; }
+    .btn-back, .btn-next, .btn-download {
+      padding: 0.6rem 1.4rem; border-radius: 8px;
+      font-size: 0.9rem; cursor: pointer; border: none;
+      transition: opacity 0.15s;
+    }
+    .btn-back { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+    .btn-next { background: var(--accent); color: #fff; }
+    .btn-download { background: var(--green); color: #000; font-weight: 600; }
+    .btn-back:hover, .btn-next:hover, .btn-download:hover { opacity: 0.85; }
+
+    /* YAML output */
+    pre {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.2rem;
+      font-size: 0.8rem; overflow-x: auto; white-space: pre-wrap;
+      margin-top: 1rem;
+    }
+    .copy-yaml {
+      background: var(--accent-dim); color: var(--accent);
+      border: 1px solid var(--accent); border-radius: 7px;
+      padding: 0.45rem 1rem; cursor: pointer; font-size: 0.82rem;
+      margin-top: 0.75rem;
+    }
+    .copy-yaml:hover { background: var(--accent); color: #fff; }
+    .next-steps {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem;
+      margin-top: 1.5rem; font-size: 0.88rem; line-height: 1.7;
+    }
+    .next-steps h3 { margin-bottom: 0.75rem; font-size: 0.95rem; }
+    .next-steps ol { padding-left: 1.25rem; }
+    .next-steps code {
+      background: rgba(79,142,247,0.12); color: var(--accent);
+      padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Build Your Daily Briefing</h1>
+  <p class="tagline">Fill in this wizard, download your YAML config, and open a PR. Back to <a href="index.html">team directory →</a></p>
+
+  <div class="steps">
+    <div class="step active" id="step-1" onclick="goTo(0)">1 · Identity</div>
+    <div class="step" id="step-2" onclick="goTo(1)">2 · Sources</div>
+    <div class="step" id="step-3" onclick="goTo(2)">3 · Topics</div>
+    <div class="step" id="step-4" onclick="goTo(3)">4 · Schedule</div>
+    <div class="step" id="step-5" onclick="goTo(4)">5 · Download</div>
+  </div>
+
+  <!-- Panel 0: Identity -->
+  <div class="panel active" id="panel-0">
+    <div class="panel-title">Who is this briefing for?</div>
+    <div class="field">
+      <label>Your name<span>*</span></label>
+      <input type="text" id="p-name" placeholder="e.g. Racquel" oninput="updateId()" />
+    </div>
+    <div class="field">
+      <label>Config ID <span>*</span></label>
+      <input type="text" id="p-id" placeholder="auto-generated from name" />
+      <div class="hint">Lowercase, no spaces — used in URLs and filenames.</div>
+    </div>
+    <div class="field">
+      <label>TTS voice</label>
+      <select id="p-voice">
+        <option value="nova" selected>nova (warm, clear)</option>
+        <option value="alloy">alloy</option>
+        <option value="ash">ash</option>
+        <option value="coral">coral</option>
+        <option value="echo">echo</option>
+        <option value="fable">fable</option>
+        <option value="onyx">onyx (deep)</option>
+        <option value="sage">sage</option>
+        <option value="shimmer">shimmer</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Timezone</label>
+      <select id="p-tz">
+        <option value="America/Los_Angeles" selected>US Pacific</option>
+        <option value="America/Denver">US Mountain</option>
+        <option value="America/Chicago">US Central</option>
+        <option value="America/New_York">US Eastern</option>
+        <option value="Europe/London">London</option>
+      </select>
+    </div>
+    <div class="nav">
+      <div></div>
+      <button class="btn-next" onclick="goTo(1)">Next →</button>
+    </div>
+  </div>
+
+  <!-- Panel 1: Sources -->
+  <div class="panel" id="panel-1">
+    <div class="panel-title">RSS sources</div>
+    <div class="hint" style="margin-bottom:1rem">Add RSS feeds to monitor. Name is for display; URL must be a valid RSS/Atom feed.</div>
+    <div id="rss-list" class="rss-list"></div>
+    <button class="add-row" onclick="addRssRow()">+ Add RSS feed</button>
+    <div class="nav">
+      <button class="btn-back" onclick="goTo(0)">← Back</button>
+      <button class="btn-next" onclick="goTo(2)">Next →</button>
+    </div>
+  </div>
+
+  <!-- Panel 2: Topics -->
+  <div class="panel" id="panel-2">
+    <div class="panel-title">Focus topics</div>
+    <div class="field">
+      <label>Topics to track</label>
+      <div id="topics-area" class="topics-area"></div>
+      <div class="topic-input-row">
+        <input type="text" id="topic-input" placeholder="e.g. AI in drug discovery" onkeydown="if(event.key==='Enter'){addTopic()}" />
+        <button onclick="addTopic()">Add</button>
+      </div>
+      <div class="hint">One topic per entry. Press Enter or click Add.</div>
+    </div>
+    <div class="field">
+      <label>Exclude topics</label>
+      <div id="exclude-area" class="topics-area"></div>
+      <div class="topic-input-row">
+        <input type="text" id="exclude-input" placeholder="e.g. Sports medicine" onkeydown="if(event.key==='Enter'){addExclude()}" />
+        <button onclick="addExclude()">Add</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Relevance threshold (1–10)</label>
+      <input type="text" id="threshold" value="6" />
+      <div class="hint">Items scoring below this are dropped. 6 is a good default.</div>
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="goTo(1)">← Back</button>
+      <button class="btn-next" onclick="goTo(3)">Next →</button>
+    </div>
+  </div>
+
+  <!-- Panel 3: Schedule -->
+  <div class="panel" id="panel-3">
+    <div class="panel-title">Delivery schedule</div>
+    <div class="field">
+      <label>Days</label>
+      <div class="days" id="days-row">
+        <button class="day-btn on" data-day="mon" onclick="toggleDay(this)">Mon</button>
+        <button class="day-btn on" data-day="tue" onclick="toggleDay(this)">Tue</button>
+        <button class="day-btn on" data-day="wed" onclick="toggleDay(this)">Wed</button>
+        <button class="day-btn on" data-day="thu" onclick="toggleDay(this)">Thu</button>
+        <button class="day-btn on" data-day="fri" onclick="toggleDay(this)">Fri</button>
+        <button class="day-btn" data-day="sat" onclick="toggleDay(this)">Sat</button>
+        <button class="day-btn" data-day="sun" onclick="toggleDay(this)">Sun</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Delivery time (local)</label>
+      <input type="time" id="sched-time" value="07:00" />
+    </div>
+    <div class="field">
+      <label>Target word count (normal day)</label>
+      <input type="text" id="target-words" value="1600" />
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="goTo(2)">← Back</button>
+      <button class="btn-next" onclick="buildYaml(); goTo(4)">Preview →</button>
+    </div>
+  </div>
+
+  <!-- Panel 4: Download -->
+  <div class="panel" id="panel-4">
+    <div class="panel-title">Your config — ready to download</div>
+    <pre id="yaml-output"></pre>
+    <button class="copy-yaml" onclick="copyYaml()">Copy to clipboard</button>
+    <button class="btn-download" style="margin-top:0.75rem;width:100%" onclick="downloadYaml()">⬇ Download YAML</button>
+    <div class="next-steps">
+      <h3>What to do next</h3>
+      <ol>
+        <li>Save this file as <code>configs/&lt;your-id&gt;.yaml</code> in the <code>venrock-daily</code> repo</li>
+        <li>Open a pull request — the Actions workflow auto-discovers new config files</li>
+        <li>After the PR merges, run <code>python briefing.py --config configs/&lt;id&gt;.yaml --init-show</code> once to create your RSS feed</li>
+        <li>Your first episode ships the next weekday at the scheduled time</li>
+        <li>Subscribe via the RSS URL on the <a href="index.html" style="color:var(--accent)">team directory</a></li>
+      </ol>
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="goTo(3)">← Back</button>
+      <a href="index.html" class="btn-next" style="text-decoration:none;display:flex;align-items:center">View directory →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentPanel = 0;
+  let topics = [];
+  let excludes = [];
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+  function goTo(n) {
+    document.querySelectorAll(".panel").forEach((p, i) => p.classList.toggle("active", i === n));
+    document.querySelectorAll(".step").forEach((s, i) => {
+      s.classList.toggle("active", i === n);
+      s.classList.toggle("done", i < n);
+    });
+    currentPanel = n;
+    window.scrollTo(0, 0);
+  }
+
+  // ── Identity ──────────────────────────────────────────────────────────────
+  function updateId() {
+    const name = document.getElementById("p-name").value;
+    document.getElementById("p-id").value = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  }
+
+  // ── RSS rows ──────────────────────────────────────────────────────────────
+  const defaultFeeds = [
+    { name: "Endpoints News", url: "https://endpoints.news/feed" },
+    { name: "STAT News", url: "https://www.statnews.com/feed/" },
+    { name: "Axios Pro Rata", url: "https://www.axios.com/pro-rata/rss" },
+  ];
+
+  function addRssRow(name = "", url = "") {
+    const list = document.getElementById("rss-list");
+    const row = document.createElement("div");
+    row.className = "rss-row";
+    row.innerHTML = `
+      <input class="name-field" type="text" placeholder="Source name" value="${name}" />
+      <input type="text" placeholder="RSS feed URL" value="${url}" />
+      <button class="rss-remove" onclick="this.parentElement.remove()">×</button>
+    `;
+    list.appendChild(row);
+  }
+
+  defaultFeeds.forEach(f => addRssRow(f.name, f.url));
+
+  // ── Topics ────────────────────────────────────────────────────────────────
+  function renderTags(list, areaId, removeKey) {
+    const area = document.getElementById(areaId);
+    area.innerHTML = "";
+    list.forEach((t, i) => {
+      const tag = document.createElement("div");
+      tag.className = "topic-tag";
+      tag.innerHTML = `${t} <button onclick="${removeKey}(${i})">×</button>`;
+      area.appendChild(tag);
+    });
+  }
+
+  function addTopic() {
+    const inp = document.getElementById("topic-input");
+    const v = inp.value.trim();
+    if (v) { topics.push(v); inp.value = ""; renderTags(topics, "topics-area", "removeTopic"); }
+  }
+  function removeTopic(i) { topics.splice(i, 1); renderTags(topics, "topics-area", "removeTopic"); }
+
+  function addExclude() {
+    const inp = document.getElementById("exclude-input");
+    const v = inp.value.trim();
+    if (v) { excludes.push(v); inp.value = ""; renderTags(excludes, "exclude-area", "removeExclude"); }
+  }
+  function removeExclude(i) { excludes.splice(i, 1); renderTags(excludes, "exclude-area", "removeExclude"); }
+
+  // Pre-populate sample topics
+  ["Biotech and pharma pipeline news — FDA decisions, drug approvals",
+   "Biotech VC — fundraising, M&A, IPOs",
+   "Macro economics affecting markets and venture funding"]
+    .forEach(t => { topics.push(t); });
+  renderTags(topics, "topics-area", "removeTopic");
+
+  // ── Days ──────────────────────────────────────────────────────────────────
+  function toggleDay(btn) { btn.classList.toggle("on"); }
+
+  // ── YAML builder ─────────────────────────────────────────────────────────
+  function indent(str, n) { return str.split("\n").map(l => " ".repeat(n) + l).join("\n"); }
+
+  function buildYaml() {
+    const id = document.getElementById("p-id").value || "my-briefing";
+    const name = document.getElementById("p-name").value || "My Name";
+    const voice = document.getElementById("p-voice").value;
+    const tz = document.getElementById("p-tz").value;
+    const time = document.getElementById("sched-time").value;
+    const words = document.getElementById("target-words").value;
+    const threshold = document.getElementById("threshold").value;
+
+    const days = [...document.querySelectorAll(".day-btn.on")].map(b => b.dataset.day);
+
+    const rssRows = [...document.querySelectorAll(".rss-row")];
+    const rssEntries = rssRows.map(r => {
+      const [nameInput, urlInput] = r.querySelectorAll("input");
+      return { name: nameInput.value.trim(), url: urlInput.value.trim() };
+    }).filter(r => r.name && r.url);
+
+    const topicsYaml = topics.map(t => `    - ${t}`).join("\n") || "    - General news";
+    const excludeYaml = excludes.length
+      ? "  exclude_topics:\n" + excludes.map(t => `    - ${t}`).join("\n")
+      : "  exclude_topics: []";
+
+    const rssYaml = rssEntries.length
+      ? rssEntries.map(r => `      - name: ${r.name}\n        url: ${r.url}`).join("\n")
+      : "      []";
+
+    const yaml = `person:
+  id: ${id}
+  name: ${name}
+  voice: ${voice}
+  timezone: ${tz}
+
+schedule:
+  days: [${days.join(", ")}]
+  time: "${time}"
+
+output:
+  target_words: ${words}
+  quiet_day_threshold: 5
+  quiet_day_words: 650
+  format: mp3
+
+focus_areas:
+  relevance_threshold: ${threshold}
+  topics:
+${topicsYaml}
+${excludeYaml}
+
+sources:
+  biotech_news:
+    rss:
+${rssYaml}
+  tech_insights:
+    scraped_urls: []
+  macro_and_markets:
+    rss: []
+
+style:
+  greeting: Open with "Good morning, ${name}" and the date. Preview three stories in two sentences.
+  tone: Intelligent, direct, investor-focused. Lead with implications, then facts. No filler.
+  story_treatment: 30-60 seconds per story. For deals, note valuation signal.
+  signoff: Close with "One thing to watch today:" — one forward-looking observation, two sentences.
+  section_order: [biotech_news, tech_insights, macro_and_markets]
+`;
+    document.getElementById("yaml-output").textContent = yaml;
+    window._yamlContent = yaml;
+    window._yamlId = id;
+  }
+
+  function copyYaml() {
+    navigator.clipboard.writeText(window._yamlContent || "").then(() => {
+      const btn = document.querySelector(".copy-yaml");
+      btn.textContent = "Copied!";
+      setTimeout(() => btn.textContent = "Copy to clipboard", 2000);
+    });
+  }
+
+  function downloadYaml() {
+    const blob = new Blob([window._yamlContent || ""], { type: "text/yaml" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (window._yamlId || "my-briefing") + ".yaml";
+    a.click();
+  }
+</script>
+</body>
+</html>

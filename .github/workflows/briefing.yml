@@ -1,0 +1,87 @@
+name: Venrock Daily Briefing
+
+on:
+  schedule:
+    # 7:00 AM PT = 14:00 UTC on weekdays
+    - cron: "0 14 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      config:
+        description: "Single config to run (e.g. configs/racquel.yaml). Leave blank to run all."
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry run — fetch, curate, script only (no TTS or upload)"
+        type: boolean
+        default: false
+
+jobs:
+  # ── Discover config files ──────────────────────────────────────────────────
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      configs: ${{ steps.list.outputs.configs }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List config files
+        id: list
+        run: |
+          if [ -n "${{ github.event.inputs.config }}" ]; then
+            echo 'configs=["${{ github.event.inputs.config }}"]' >> "$GITHUB_OUTPUT"
+          else
+            configs=$(ls configs/*.yaml 2>/dev/null | \
+              python3 -c "import sys, json; print(json.dumps([l.strip() for l in sys.stdin]))")
+            echo "configs=$configs" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Run one job per config ─────────────────────────────────────────────────
+  briefing:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: ${{ fromJson(needs.discover.outputs.configs) }}
+      fail-fast: false   # one person's failure doesn't cancel others
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run briefing pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Azure Speech TTS — region slug (e.g. "eastus") and ARM resource path
+          AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
+          AZURE_SPEECH_RESOURCE_ID: ${{ secrets.AZURE_SPEECH_RESOURCE_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+          # Azure AD app registration — shared by TTS and Outlook (pending IT approval)
+          M365_CLIENT_ID: ${{ secrets.M365_CLIENT_ID }}
+          M365_CLIENT_SECRET: ${{ secrets.M365_CLIENT_SECRET }}
+          M365_TENANT_ID: ${{ secrets.M365_TENANT_ID }}
+        run: |
+          FLAGS=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            FLAGS="--dry-run"
+          fi
+          python briefing.py --config "${{ matrix.config }}" $FLAGS
+
+      - name: Commit updated feeds back to repo
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          git config user.name  "Venrock Daily Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add feeds.json "shows/" || true
+          git diff --cached --quiet || \
+            git commit -m "chore: update feeds [skip ci]"
+          git push origin main
