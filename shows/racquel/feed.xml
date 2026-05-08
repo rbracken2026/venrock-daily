@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Venrock Daily — Racquel</title>
+    <link>https://rbracken2026.github.io/venrock-daily/shows/racquel/feed.xml</link>
+    <language>en-us</language>
+    <description><![CDATA[Daily investor briefing for Racquel]]></description>
+    <itunes:author>Racquel</itunes:author>
+    <itunes:summary><![CDATA[Daily investor briefing for Racquel]]></itunes:summary>
+    <itunes:owner>
+      <itunes:name>Racquel</itunes:name>
+      <itunes:email>rbracken@venrock.com</itunes:email>
+    </itunes:owner>
+    <itunes:explicit>false</itunes:explicit>
+    <itunes:category text="Business">
+      <itunes:category text="Investing"/>
+    </itunes:category>
+    <itunes:type>episodic</itunes:type>
+    <lastBuildDate>Fri, 08 May 2026 03:02:02 +0000</lastBuildDate>
+    <!-- Add new <item> blocks above this line, newest first -->
+  </channel>
+</rss>
