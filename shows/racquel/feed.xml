@@ -13,6 +13,12 @@
       <itunes:name>Racquel</itunes:name>
       <itunes:email>rbracken@venrock.com</itunes:email>
     </itunes:owner>
+    <itunes:image href="https://rbracken2026.github.io/venrock-daily/shows/racquel/artwork.png"/>
+    <image>
+      <url>https://rbracken2026.github.io/venrock-daily/shows/racquel/artwork.png</url>
+      <title>Venrock Daily - Racquel</title>
+      <link>https://rbracken2026.github.io/venrock-daily/shows/racquel/feed.xml</link>
+    </image>
     <itunes:explicit>false</itunes:explicit>
     <itunes:category text="Business">
       <itunes:category text="Investing"/>
