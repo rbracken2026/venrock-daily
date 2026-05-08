@@ -29,6 +29,12 @@ _FEED_TEMPLATE = """\
       <itunes:name>__OWNER_NAME__</itunes:name>
       <itunes:email>__OWNER_EMAIL__</itunes:email>
     </itunes:owner>
+    <itunes:image href="__ARTWORK_URL__"/>
+    <image>
+      <url>__ARTWORK_URL__</url>
+      <title>__TITLE__</title>
+      <link>__FEED_URL__</link>
+    </image>
     <itunes:explicit>false</itunes:explicit>
     <itunes:category text="Business">
       <itunes:category text="Investing"/>
@@ -51,10 +57,12 @@ def init_show(
     person_id = config.person.id
     feed_url = f"https://{username}.github.io/{repo_name}/shows/{person_id}/feed.xml"
 
+    artwork_url = f"https://{username}.github.io/{repo_name}/shows/{person_id}/artwork.png"
     feed_xml = (
         _FEED_TEMPLATE
         .replace("__TITLE__", f"Venrock Daily — {config.person.name}")
         .replace("__FEED_URL__", feed_url)
+        .replace("__ARTWORK_URL__", artwork_url)
         .replace("__DESCRIPTION__", f"Daily investor briefing for {config.person.name}")
         .replace("__OWNER_NAME__", config.person.name)
         .replace("__OWNER_EMAIL__", owner_email)
