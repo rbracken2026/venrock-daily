@@ -7,6 +7,7 @@ the 4096-character per-request limit.
 import json
 import logging
 import re
+import time
 import urllib.request
 from pathlib import Path
 
@@ -56,6 +57,8 @@ def generate_mp3(
         with urllib.request.urlopen(req, timeout=60) as resp:
             audio_parts.append(resp.read())
         logger.debug("TTS chunk %d/%d done", i + 1, len(chunks))
+        if i < len(chunks) - 1:
+            time.sleep(1)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "wb") as f:
