@@ -57,6 +57,12 @@ sources:
         search_query: "from:s@wlessin.com"
         lookback_days: 7
         active: true
+      - name: BioCentury Weekend
+        search_query: "subject:BioCentury - week of"
+        lookback_days: 3
+        active: true
+        monday_only: true
+        fetch_attachments: true
     scraped_urls:
       - name: Berkshire Hathaway press releases
         url: https://www.berkshirehathaway.com/news/newsb.html

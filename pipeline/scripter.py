@@ -1,5 +1,5 @@
 import logging
-from datetime import date
+from datetime import date, datetime, timezone
 
 import anthropic
 
@@ -36,8 +36,9 @@ Write the Venrock Daily morning briefing for {name}. Today is {date}.
 4. Each story: 30–60 seconds (75–150 words). Lead with implication, then facts.
    - Clinical data: name the comparator and competitive implication
    - Deals: note the valuation signal
-5. Close with the exact sign-off: "One thing to watch today:" then 2 forward-looking sentences
-6. Target {target_words} words total
+5. {biocentury_instruction}
+6. Close with the exact sign-off: "One thing to watch today:" then 2 forward-looking sentences
+7. Target {target_words} words total
 
 Start directly with the greeting — no preamble.
 """
@@ -75,6 +76,21 @@ def write_script(
     if is_quiet:
         logger.info("Quiet day (%d items) — targeting %d words", len(curated), target_words)
 
+    is_monday = datetime.now(timezone.utc).weekday() == 0
+    has_biocentury = any(
+        item.source == "BioCentury Weekend" for item in curated
+    )
+    if is_monday and has_biocentury:
+        target_words += 600
+        biocentury_instruction = (
+            "Today is Monday. The BioCentury Weekend summary is included in biotech_news. "
+            "Place it as the final story in the biotech section, before tech_insights. "
+            "Allot approximately 4 minutes (400-500 words) to summarising the most important "
+            "developments from the BioCentury report. Only cover it if the material is substantive."
+        )
+    else:
+        biocentury_instruction = "No BioCentury weekend report today — skip this step."
+
     # Cross-platform day without leading zero
     date_str = today.strftime("%A, %B ") + str(today.day) + today.strftime(", %Y")
 
@@ -88,6 +104,7 @@ def write_script(
         section_order=", ".join(config.style.section_order),
         item_count=len(curated),
         target_words=target_words,
+        biocentury_instruction=biocentury_instruction,
         items_text=_format_items(curated, config.style.section_order),
     )
 

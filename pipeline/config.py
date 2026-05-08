@@ -51,6 +51,8 @@ class OutlookSource(BaseModel):
     lookback_hours: Optional[int] = None
     lookback_days: Optional[int] = None
     active: bool = False
+    monday_only: bool = False
+    fetch_attachments: bool = False
 
     @model_validator(mode="after")
     def check_lookback(self) -> "OutlookSource":

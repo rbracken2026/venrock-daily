@@ -12,7 +12,9 @@ forwarded chains, and anything containing confidential business content.
 """
 
 import asyncio
+import base64
 import functools
+import io
 import logging
 import os
 from datetime import datetime, timezone, timedelta
@@ -44,8 +46,23 @@ async def _get_token(client: httpx.AsyncClient) -> str:
     return resp.json()["access_token"]
 
 
+def _extract_pdf_text(pdf_bytes: bytes) -> str:
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        pages = [page.extract_text() or "" for page in reader.pages]
+        return "\n".join(pages)[:8000]
+    except Exception as exc:
+        logger.warning("PDF extraction failed: %s", exc)
+        return ""
+
+
 async def fetch_outlook(source: OutlookSource, section: str, api_key: str) -> list[FetchedItem]:
     if not source.active:
+        return []
+
+    if source.monday_only and datetime.now(timezone.utc).weekday() != 0:
+        logger.info("Outlook %s: skipping non-Monday source %s", section, source.name)
         return []
 
     hours = source.lookback_hours or (source.lookback_days or 1) * 24
@@ -53,15 +70,19 @@ async def fetch_outlook(source: OutlookSource, section: str, api_key: str) -> li
     cutoff_str = cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
+        select_fields = "subject,bodyPreview,receivedDateTime,from,id"
+        if source.fetch_attachments:
+            select_fields += "&$expand=attachments"
+
+        async with httpx.AsyncClient(timeout=30) as client:
             token = await _get_token(client)
             resp = await client.get(
                 _MESSAGES_URL,
                 params={
                     "$search": f'"{source.search_query}"',
                     "$filter": f"receivedDateTime ge {cutoff_str}",
-                    "$select": "subject,bodyPreview,receivedDateTime,from",
-                    "$top": "25",
+                    "$select": select_fields,
+                    "$top": "10",
                 },
                 headers={
                     "Authorization": f"Bearer {token}",
@@ -70,6 +91,19 @@ async def fetch_outlook(source: OutlookSource, section: str, api_key: str) -> li
             )
             resp.raise_for_status()
             data = resp.json()
+
+            # Fetch full attachment content for PDF sources
+            if source.fetch_attachments:
+                for msg in data.get("value", []):
+                    for att in msg.get("attachments", []):
+                        if att.get("contentType") == "application/pdf" and not att.get("contentBytes"):
+                            att_resp = await client.get(
+                                f"{_MESSAGES_URL}/{msg['id']}/attachments/{att['id']}",
+                                headers={"Authorization": f"Bearer {token}"},
+                            )
+                            if att_resp.status_code == 200:
+                                att["contentBytes"] = att_resp.json().get("contentBytes", "")
+
     except Exception as exc:
         logger.warning("Outlook fetch failed for %s: %s", source.name, exc)
         return []
@@ -81,6 +115,18 @@ async def fetch_outlook(source: OutlookSource, section: str, api_key: str) -> li
             pub = datetime.fromisoformat(received.replace("Z", "+00:00"))
         except ValueError:
             pub = None
+
+        summary = msg.get("bodyPreview", "")[:1500]
+
+        if source.fetch_attachments:
+            for att in msg.get("attachments", []):
+                if att.get("contentType") == "application/pdf" and att.get("contentBytes"):
+                    pdf_bytes = base64.b64decode(att["contentBytes"])
+                    pdf_text = _extract_pdf_text(pdf_bytes)
+                    if pdf_text:
+                        summary = pdf_text
+                        break
+
         items.append(
             FetchedItem(
                 title=msg.get("subject", "").strip(),
@@ -88,7 +134,7 @@ async def fetch_outlook(source: OutlookSource, section: str, api_key: str) -> li
                 source_name=source.name,
                 section=section,
                 published=pub,
-                summary=msg.get("bodyPreview", "")[:1500],
+                summary=summary,
                 author=msg.get("from", {}).get("emailAddress", {}).get("address", ""),
             )
         )
