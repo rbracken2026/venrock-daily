@@ -52,11 +52,11 @@ sources:
       - name: All STAT+ newsletters
         search_query: "from:statnews.com"
         lookback_hours: 24
-        active: false
+        active: true
       - name: SWL Week in Review
         search_query: "from:s@wlessin.com"
         lookback_days: 7
-        active: false
+        active: true
     scraped_urls:
       - name: Berkshire Hathaway press releases
         url: https://www.berkshirehathaway.com/news/newsb.html
