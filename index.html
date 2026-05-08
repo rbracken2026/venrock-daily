@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Venrock Daily</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f3;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a1a;
+      color: #fff;
+      padding: 28px 32px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    header span {
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    .player-bar {
+      display: none;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .player-bar.active { display: block; }
+
+    .player-bar .ep-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .player-bar audio {
+      width: 100%;
+      height: 40px;
+    }
+
+    .episodes { display: flex; flex-direction: column; gap: 12px; }
+
+    .episode {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      cursor: pointer;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .episode:hover {
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      border-color: #ccc;
+    }
+
+    .episode.playing {
+      border-color: #1a1a1a;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+
+    .play-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+
+    .episode.playing .play-btn { background: #555; }
+
+    .ep-info { flex: 1; min-width: 0; }
+
+    .ep-date {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .ep-desc {
+      font-size: 0.9rem;
+      color: #444;
+      line-height: 1.5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .loading, .empty {
+      text-align: center;
+      color: #888;
+      padding: 60px 0;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Venrock Daily</h1>
+  <span>Your morning briefing</span>
+</header>
+
+<div class="container">
+  <div class="player-bar" id="playerBar">
+    <div class="ep-title" id="playerTitle"></div>
+    <audio id="audioEl" controls preload="none"></audio>
+  </div>
+
+  <div class="episodes" id="episodeList">
+    <div class="loading">Loading episodes…</div>
+  </div>
+</div>
+
+<script>
+  const FEED = "shows/racquel/feed.xml";
+
+  async function loadFeed() {
+    const res = await fetch(FEED + "?_=" + Date.now());
+    const text = await res.text();
+    const xml = new DOMParser().parseFromString(text, "application/xml");
+    const items = [...xml.querySelectorAll("item")];
+
+    const list = document.getElementById("episodeList");
+    list.innerHTML = "";
+
+    if (!items.length) {
+      list.innerHTML = '<div class="empty">No episodes yet — check back tomorrow morning.</div>';
+      return;
+    }
+
+    items.forEach((item, i) => {
+      const title = item.querySelector("title")?.textContent || "";
+      const desc = item.querySelector("description")?.textContent || "";
+      const enclosure = item.querySelector("enclosure");
+      const mp3 = enclosure?.getAttribute("url") || "";
+      const pubDate = item.querySelector("pubDate")?.textContent || "";
+
+      const date = pubDate
+        ? new Date(pubDate).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+        : "";
+
+      const el = document.createElement("div");
+      el.className = "episode";
+      el.innerHTML = `
+        <div class="play-btn">&#9654;</div>
+        <div class="ep-info">
+          <div class="ep-date">${date}</div>
+          <div class="ep-desc">${desc.slice(0, 120)}…</div>
+        </div>
+      `;
+
+      el.addEventListener("click", () => play(el, mp3, title));
+      list.appendChild(el);
+    });
+  }
+
+  function play(el, url, title) {
+    document.querySelectorAll(".episode").forEach(e => e.classList.remove("playing"));
+    el.classList.add("playing");
+
+    const bar = document.getElementById("playerBar");
+    const audio = document.getElementById("audioEl");
+    const playerTitle = document.getElementById("playerTitle");
+
+    bar.classList.add("active");
+    playerTitle.textContent = title;
+    audio.src = url;
+    audio.play();
+  }
+
+  loadFeed().catch(() => {
+    document.getElementById("episodeList").innerHTML =
+      '<div class="empty">Could not load episodes. Try refreshing.</div>';
+  });
+</script>
+</body>
+</html>
