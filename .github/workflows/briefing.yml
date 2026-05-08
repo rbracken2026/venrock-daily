@@ -59,12 +59,10 @@ jobs:
       - name: Run briefing pipeline
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Azure Speech TTS — region slug (e.g. "eastus") and ARM resource path
-          AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
-          AZURE_SPEECH_RESOURCE_ID: ${{ secrets.AZURE_SPEECH_RESOURCE_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPO: ${{ github.repository }}
-          # Azure AD app registration — shared by TTS and Outlook (pending IT approval)
+          # Outlook (pending IT approval — sources are active: false until enabled)
           M365_CLIENT_ID: ${{ secrets.M365_CLIENT_ID }}
           M365_CLIENT_SECRET: ${{ secrets.M365_CLIENT_SECRET }}
           M365_TENANT_ID: ${{ secrets.M365_TENANT_ID }}

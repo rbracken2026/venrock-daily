@@ -41,7 +41,7 @@ def _require_env(name: str) -> str:
 
 async def run(config: BriefingConfig, dry_run: bool) -> None:
     anthropic_key = _require_env("ANTHROPIC_API_KEY")
-    azure_region = _require_env("AZURE_SPEECH_REGION")
+    openai_key = _require_env("OPENAI_API_KEY")
     github_token = _require_env("GITHUB_TOKEN")
     github_repo = os.environ.get("GITHUB_REPO", "rbracken2026/venrock-daily")
 
@@ -81,7 +81,7 @@ async def run(config: BriefingConfig, dry_run: bool) -> None:
     # ── Step 4: TTS ──────────────────────────────────────────────────────────
     logger.info("=== Step 4: TTS ===")
     mp3_path = outputs_dir / f"{config.person.id}-{today}.mp3"
-    generate_mp3(script, mp3_path, azure_region, config.person.voice)
+    generate_mp3(script, mp3_path, openai_key, config.person.voice)
 
     # ── Step 5: Upload + publish ─────────────────────────────────────────────
     logger.info("=== Step 5: Upload ===")

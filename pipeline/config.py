@@ -10,7 +10,7 @@ from pydantic import BaseModel, model_validator
 class PersonConfig(BaseModel):
     id: str
     name: str
-    voice: str = "en-US-JennyNeural"
+    voice: str = "nova"
     timezone: str = "America/Los_Angeles"
 
 
