@@ -68,7 +68,7 @@ def generate_mp3(
                     raise
         logger.debug("TTS chunk %d/%d done", i + 1, len(chunks))
         if i < len(chunks) - 1:
-            time.sleep(25)
+            time.sleep(2)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "wb") as f:
