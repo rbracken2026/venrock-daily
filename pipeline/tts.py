@@ -54,11 +54,21 @@ def generate_mp3(
                 "Content-Type": "application/json",
             },
         )
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            audio_parts.append(resp.read())
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    audio_parts.append(resp.read())
+                break
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt < 4:
+                    wait = 10 * (attempt + 1)
+                    logger.warning("TTS 429 rate limit — waiting %ds (attempt %d/5)", wait, attempt + 1)
+                    time.sleep(wait)
+                else:
+                    raise
         logger.debug("TTS chunk %d/%d done", i + 1, len(chunks))
         if i < len(chunks) - 1:
-            time.sleep(1)
+            time.sleep(2)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "wb") as f:
