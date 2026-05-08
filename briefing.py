@@ -72,9 +72,9 @@ async def run(config: BriefingConfig, dry_run: bool) -> None:
 
     if dry_run:
         logger.info("--dry-run: stopping before TTS and upload")
-        print("\n" + "─" * 60)
+        print("\n" + "-" * 60)
         print("SCRIPT PREVIEW (first 600 chars)")
-        print("─" * 60)
+        print("-" * 60)
         print(script[:600] + (" …" if len(script) > 600 else ""))
         return
 
