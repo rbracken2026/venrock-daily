@@ -313,6 +313,22 @@
       <itunes:explicit>false</itunes:explicit>
     </item>
 
+    
+    <item>
+      <title>Venrock Daily — Racquel — Wednesday, June 3, 2026</title>
+      <description><![CDATA[Good morning, Racquel. It's Wednesday, June third, twenty twenty-six.]]></description>
+      <pubDate>Wed, 03 Jun 2026 07:00:00 +0000</pubDate>
+      <guid isPermaLink="false">racquel-2026-06-03</guid>
+      <enclosure
+        url="https://rbracken2026.github.io/venrock-daily/shows/racquel/episodes/2026-06-03.mp3"
+        length="12451680"
+        type="audio/mpeg"/>
+      <itunes:title>Venrock Daily — Racquel — Wednesday, June 3, 2026</itunes:title>
+      <itunes:duration>10:00</itunes:duration>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+
     <!-- Add new <item> blocks above this line, newest first -->
   </channel>
 </rss>
